@@ -1,0 +1,11 @@
+[package]
+name = "smolpsi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+curve25519-elligator2 = "0.1.0-alpha.2"
+rand = "0.8.5"
+aes = "0.8.4"
+block-modes = "0.8"
+block-padding = "0.2"
