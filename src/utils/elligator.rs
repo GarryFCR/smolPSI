@@ -1,4 +1,4 @@
-use curve25519_elligator2::{EdwardsPoint, MapToPointVariant, Randomized};
+use curve25519_elligator2::{edwards::EdwardsPoint, MapToPointVariant, Randomized};
 use rand::{CryptoRng, RngCore};
 const RETRY_LIMIT: usize = 64;
 

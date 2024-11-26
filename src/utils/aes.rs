@@ -1,4 +1,3 @@
-
 //! Fixsliced implementations of AES-128, AES-192 and AES-256 (32-bit)
 //! adapted from the C implementation
 //!
@@ -545,7 +544,6 @@ fn sub_bytes(state: &mut [u32]) {
     state[7] = s0;
 }
 
-
 /// Computation of the MixColumns transformation in the fixsliced representation, with different
 /// rotations used according to the round number mod 4.
 ///
@@ -902,6 +900,14 @@ fn rotate_rows_and_columns_2_2(x: u32) -> u32 {
     (ror(x, ror_distance(1, 2)) & 0xf0f0f0f0)
 }
 
+pub fn input_rep(rep: [u8; 32]) -> BatchBlocks {
+
+    let arr1: Array<u8, U16> = Array([rep[0],rep[1],rep[2],rep[3],rep[4],rep[5],rep[6],rep[7],rep[8],rep[9],rep[10],rep[11],rep[12],rep[13],rep[14],rep[15]]);
+    let arr2: Array<u8, U16> = Array([rep[16],rep[17],rep[18],rep[19],rep[20],rep[21],rep[22],rep[23],rep[24],rep[25],rep[26],rep[27],rep[28],rep[29],rep[30],rep[31]]);
+    let blocks: BatchBlocks = Array([arr1, arr2]);
+    blocks
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -909,14 +915,10 @@ mod tests {
 
     #[test]
     fn test_first_round_key() {
-        // Example 4 blocks of 128-bit data (16 bytes each)
-        let arr: Array<u8, U16> = Array([1, 2, 3, 4, 5, 5, 5, 55, 5, 5, 1, 2, 3, 4, 5, 6]);
-        let blocks: BatchBlocks = Array([arr, arr]);
-
+        let blocks = input_rep([0_u8;32]);
         // Call the encryption function (currently unimplemented)
         let encrypted_blocks = aes256_encrypt(&ROUNDKEY, &blocks);
         let decrypted_blocks = aes256_decrypt(&ROUNDKEY, &encrypted_blocks);
-
         // Compare the generated first round key with the expected one
         assert_eq!(
             blocks, decrypted_blocks,
