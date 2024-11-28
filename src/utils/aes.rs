@@ -1,4 +1,4 @@
-//! Fixsliced implementations of AES-128, AES-192 and AES-256 (32-bit)
+//! Fixsliced implementation of AES-256 (32-bit)
 //! adapted from the C implementation
 //!
 //! All implementations are fully bitsliced and do not rely on any
@@ -6,14 +6,11 @@
 //!
 //! See the paper at <https://eprint.iacr.org/2020/1123.pdf> for more details.
 //!
-//! # Author (original C code)
-//!
-//! Alexandre Adomnicai, Nanyang Technological University, Singapore
-//! <alexandre.adomnicai@ntu.edu.sg>
-//!
-//! Originally licensed MIT. Relicensed as Apache 2.0+MIT with permission.
-
+// Snippet taken from https://github.com/RustCrypto/block-ciphers for 
+// ideal permutation since actual low level functions are not accessible
 #![allow(clippy::unreadable_literal)]
+
+use std::io::Read;
 
 /// 128-bit AES block
 use cipher::{
@@ -901,18 +898,29 @@ fn rotate_rows_and_columns_2_2(x: u32) -> u32 {
 }
 
 pub fn input_rep(rep: [u8; 32]) -> BatchBlocks {
-
-    let arr1: Array<u8, U16> = Array([rep[0],rep[1],rep[2],rep[3],rep[4],rep[5],rep[6],rep[7],rep[8],rep[9],rep[10],rep[11],rep[12],rep[13],rep[14],rep[15]]);
-    let arr2: Array<u8, U16> = Array([rep[16],rep[17],rep[18],rep[19],rep[20],rep[21],rep[22],rep[23],rep[24],rep[25],rep[26],rep[27],rep[28],rep[29],rep[30],rep[31]]);
+    let arr1: Array<u8, U16> = Array([
+        rep[0], rep[1], rep[2], rep[3], rep[4], rep[5], rep[6], rep[7], rep[8], rep[9], rep[10],
+        rep[11], rep[12], rep[13], rep[14], rep[15],
+    ]);
+    let arr2: Array<u8, U16> = Array([
+        rep[16], rep[17], rep[18], rep[19], rep[20], rep[21], rep[22], rep[23], rep[24], rep[25],
+        rep[26], rep[27], rep[28], rep[29], rep[30], rep[31],
+    ]);
     let blocks: BatchBlocks = Array([arr1, arr2]);
     blocks
 }
 
+pub fn permute(rep: [u8; 32]) -> [u8; 32] {
+    let blocks = input_rep(rep);
+    let encrypted_blocks = aes256_encrypt(&ROUNDKEY, &blocks);
+    let m = encrypted_blocks.as_flattened();
+    let byte_list: [u8; 32] = m.try_into().expect("Slice has wrong length");
+    byte_list
+}
 #[cfg(test)]
 mod tests {
 
     use super::*;
-
     #[test]
     fn test_first_round_key() {
         let blocks = input_rep([0_u8;32]);

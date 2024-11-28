@@ -1,7 +1,9 @@
-use curve25519_elligator2::scalar::Scalar;
+use std::vec;
+
+use curve25519_elligator2::scalar::{self, Scalar};
 
 pub struct Poly {
-    coeffs: Vec<Scalar>,
+    pub coeffs: Vec<Scalar>,
 }
 
 impl Poly {
@@ -43,57 +45,78 @@ impl Poly {
 
         Poly { coeffs } // Return the new polynomial
     }
+}
 
-    // Computes the Lagrange basis polynomial l_j
-    fn lagrange_basis(i: usize, xs: Vec<Scalar>) -> Poly {
-        let mut basis = Poly {
-            coeffs: vec![Scalar::ONE],
-        };
+pub fn to_scalar_vec(z : Vec<[u8; 32]>)-> Vec<Scalar>{
+    let mut x : Vec<Scalar> = vec![];
+    for i in z.iter(){
+        x.push(Scalar::from_bytes_mod_order(*i));
+    }
+    x
 
-        let mut acc = Scalar::ONE;
+}
 
-        for m in 0..xs.len() {
-            if i == m {
-                continue;
-            }
+pub fn to_byte_array_vec(scalars: Vec<Scalar>) -> Vec<[u8; 32]> {
+    let mut result: Vec<[u8; 32]> = vec![];
 
-            // Create -xm polynomial
-            basis = basis.mul(&Poly::minus_const(xs[m].clone())); // Multiply by -xm polynomial
-
-            let den = xs[i] - (xs[m]); // den = xi - xm
-            let inverted_den = den.invert(); // den = 1 / den
-            acc = acc * inverted_den; // acc = acc * den
-        }
-
-        // Multiply all coefficients by the denominator
-        for coeff in &mut basis.coeffs {
-            *coeff = *coeff * acc;
-        }
-
-        basis
+    for scalar in scalars.iter() {
+        let bytes = scalar.to_bytes();
+        result.push(bytes);
     }
 
-    pub fn recover_pri_poly(x: Vec<Scalar>, y: Vec<Scalar>) -> Result<Poly, String> {
-        if x.len() != y.len() {
-            return Err("x,y values do not have the correct length".to_string());
+    result
+}
+
+
+ // Computes the Lagrange basis polynomial l_j
+ fn lagrange_basis(i: usize, xs: Vec<Scalar>) -> Poly {
+    let mut basis = Poly {
+        coeffs: vec![Scalar::ONE],
+    };
+
+    let mut acc = Scalar::ONE;
+
+    for m in 0..xs.len() {
+        if i == m {
+            continue;
         }
 
-        let mut acc_poly: Option<Poly> = None;
+        // Create -xm polynomial
+        basis = basis.mul(&Poly::minus_const(xs[m].clone())); // Multiply by -xm polynomial
 
-        for j in 0..x.len() {
-            let mut basis = Poly::lagrange_basis(j, x.clone());
-
-            for i in 0..basis.coeffs.len() {
-                basis.coeffs[i] = basis.coeffs[i] * y[j];
-            }
-
-            if let Some(ref mut acc) = acc_poly {
-                acc_poly = Some(acc.Add(&basis)); // Add L_j * y_j
-            } else {
-                acc_poly = Some(basis);
-            }
-        }
-
-        acc_poly.ok_or_else(|| "Failed to recover polynomial".to_string())
+        let den = xs[i] - (xs[m]); // den = xi - xm
+        let inverted_den = den.invert(); // den = 1 / den
+        acc = acc * inverted_den; // acc = acc * den
     }
+
+    // Multiply all coefficients by the denominator
+    for coeff in &mut basis.coeffs {
+        *coeff = *coeff * acc;
+    }
+
+    basis
+}
+
+pub fn recover_pri_poly(x: Vec<Scalar>, y: Vec<Scalar>) -> Result<Poly, String> {
+    if x.len() != y.len() {
+        return Err("x,y values do not have the correct length".to_string());
+    }
+
+    let mut acc_poly: Option<Poly> = None;
+
+    for j in 0..x.len() {
+        let mut basis = lagrange_basis(j, x.clone());
+
+        for i in 0..basis.coeffs.len() {
+            basis.coeffs[i] = basis.coeffs[i] * y[j];
+        }
+
+        if let Some(ref mut acc) = acc_poly {
+            acc_poly = Some(acc.Add(&basis)); // Add L_j * y_j
+        } else {
+            acc_poly = Some(basis);
+        }
+    }
+
+    acc_poly.ok_or_else(|| "Failed to recover polynomial".to_string())
 }

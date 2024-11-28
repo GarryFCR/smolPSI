@@ -2,22 +2,22 @@ use curve25519_elligator2::{edwards::EdwardsPoint, MapToPointVariant, Randomized
 use rand::{CryptoRng, RngCore};
 const RETRY_LIMIT: usize = 64;
 
-pub struct Key {
-    pub privkey: [u8; 32],
-    pub pubkey: curve25519_elligator2::edwards::EdwardsPoint,
-}
+// pub struct Key {
+//     pub privkey: [u8; 32],
+//     pub pubkey: curve25519_elligator2::edwards::EdwardsPoint,
+// }
 
-pub fn keygen() -> Key {
-    let mut rng = rand::thread_rng();
-    let mut privkey = [0_u8; 32];
-    rng.fill_bytes(&mut privkey);
+// pub fn keygen() -> Key {
+//     let mut rng = rand::thread_rng();
+//     let mut privkey = [0_u8; 32];
+//     rng.fill_bytes(&mut privkey);
 
-    let public_key = Randomized::mul_base_clamped(privkey);
-    Key {
-        privkey: privkey,
-        pubkey: public_key,
-    }
-}
+//     let public_key = Randomized::mul_base_clamped(privkey);
+//     Key {
+//         privkey: privkey,
+//         pubkey: public_key,
+//     }
+// }
 
 pub fn key_from_rng<R: RngCore + CryptoRng>(mut csprng: R) -> ([u8; 32], u8) {
     let mut private = [0_u8; 32];
