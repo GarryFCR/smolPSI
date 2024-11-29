@@ -910,13 +910,22 @@ pub fn input_rep(rep: [u8; 32]) -> BatchBlocks {
     blocks
 }
 
-pub fn permute(rep: [u8; 32]) -> [u8; 32] {
+pub fn inverse_permute(rep: [u8; 32]) -> [u8; 32] {
     let blocks = input_rep(rep);
     let encrypted_blocks = aes256_encrypt(&ROUNDKEY, &blocks);
     let m = encrypted_blocks.as_flattened();
     let byte_list: [u8; 32] = m.try_into().expect("Slice has wrong length");
     byte_list
 }
+pub fn permute(byte_list: [u8; 32]) -> [u8; 32] {
+    let blocks = input_rep(byte_list);
+    let decrypted_blocks = aes256_decrypt(&ROUNDKEY, &blocks);
+    let m = decrypted_blocks.as_flattened();
+    let rep : [u8; 32] = m.try_into().expect("Slice has wrong length");
+    rep
+
+}
+
 #[cfg(test)]
 mod tests {
 

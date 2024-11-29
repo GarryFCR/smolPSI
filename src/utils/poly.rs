@@ -1,6 +1,6 @@
+use curve25519_elligator2::scalar::Scalar;
+use sha2::{Digest, Sha256};
 use std::vec;
-
-use curve25519_elligator2::scalar::{self, Scalar};
 
 pub struct Poly {
     pub coeffs: Vec<Scalar>,
@@ -45,31 +45,24 @@ impl Poly {
 
         Poly { coeffs } // Return the new polynomial
     }
-}
 
-pub fn to_scalar_vec(z : Vec<[u8; 32]>)-> Vec<Scalar>{
-    let mut x : Vec<Scalar> = vec![];
-    for i in z.iter(){
-        x.push(Scalar::from_bytes_mod_order(*i));
+    // Evaluates the polynomial at a given value of x
+    pub fn evaluate(&self, x: Scalar) -> Scalar {
+        let mut result = Scalar::ZERO; // Assuming Scalar has a zero method
+        let mut x_pow = Scalar::ONE; // Starting from x^0
+
+        for &coeff in self.coeffs.iter().rev() {
+            result += coeff * x_pow; // result += coeff * x^i
+            x_pow *= x; // Update x^i to x^(i+1)
+        }
+
+        result
     }
-    x
-
-}
-
-pub fn to_byte_array_vec(scalars: Vec<Scalar>) -> Vec<[u8; 32]> {
-    let mut result: Vec<[u8; 32]> = vec![];
-
-    for scalar in scalars.iter() {
-        let bytes = scalar.to_bytes();
-        result.push(bytes);
-    }
-
-    result
 }
 
 
- // Computes the Lagrange basis polynomial l_j
- fn lagrange_basis(i: usize, xs: Vec<Scalar>) -> Poly {
+// Computes the Lagrange basis polynomial l_j
+fn lagrange_basis(i: usize, xs: Vec<Scalar>) -> Poly {
     let mut basis = Poly {
         coeffs: vec![Scalar::ONE],
     };

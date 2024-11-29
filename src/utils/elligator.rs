@@ -1,6 +1,5 @@
 use curve25519_elligator2::{edwards::EdwardsPoint, MapToPointVariant, Randomized};
 use rand::{CryptoRng, RngCore};
-const RETRY_LIMIT: usize = 64;
 
 // pub struct Key {
 //     pub privkey: [u8; 32],
@@ -28,8 +27,8 @@ pub fn key_from_rng<R: RngCore + CryptoRng>(mut csprng: R) -> ([u8; 32], u8) {
     let tweak = csprng.next_u32() as u8;
 
     let mut repres: Option<[u8; 32]> = Randomized::to_representative(&private, tweak).into();
-
-    for _ in 0..RETRY_LIMIT {
+    let retry_limit: usize = 64;
+    for _ in 0..retry_limit {
         if repres.is_some() {
             return (private, tweak);
         }
