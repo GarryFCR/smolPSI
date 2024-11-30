@@ -10,8 +10,6 @@
 // ideal permutation since actual low level functions are not accessible
 #![allow(clippy::unreadable_literal)]
 
-use std::io::Read;
-
 /// 128-bit AES block
 use cipher::{
     array::Array,
@@ -58,17 +56,16 @@ pub(crate) fn aes256_decrypt(rkeys: &FixsliceKeys256, blocks: &BatchBlocks) -> B
     add_round_key(&mut state, &rkeys[112..]);
     inv_sub_bytes(&mut state);
 
-    #[cfg(not(aes_compact))]
     {
         inv_shift_rows_2(&mut state);
     }
 
     let mut rk_off = 104;
     loop {
-        #[cfg(aes_compact)]
-        {
-            inv_shift_rows_2(&mut state);
-        }
+        // #[cfg(aes_compact)]
+        // {
+        //     inv_shift_rows_2(&mut state);
+        // }
 
         add_round_key(&mut state, &rkeys[rk_off..(rk_off + 8)]);
         inv_mix_columns_1(&mut state);
@@ -84,7 +81,6 @@ pub(crate) fn aes256_decrypt(rkeys: &FixsliceKeys256, blocks: &BatchBlocks) -> B
         inv_sub_bytes(&mut state);
         rk_off -= 8;
 
-        #[cfg(not(aes_compact))]
         {
             add_round_key(&mut state, &rkeys[rk_off..(rk_off + 8)]);
             inv_mix_columns_3(&mut state);
@@ -120,16 +116,15 @@ pub(crate) fn aes256_encrypt(rkeys: &FixsliceKeys256, blocks: &BatchBlocks) -> B
         add_round_key(&mut state, &rkeys[rk_off..(rk_off + 8)]);
         rk_off += 8;
 
-        #[cfg(aes_compact)]
-        {
-            shift_rows_2(&mut state);
-        }
+        // #[cfg(aes_compact)]
+        // {
+        //     shift_rows_2(&mut state);
+        // }
 
         if rk_off == 112 {
             break;
         }
 
-        #[cfg(not(aes_compact))]
         {
             sub_bytes(&mut state);
             mix_columns_2(&mut state);
@@ -148,7 +143,6 @@ pub(crate) fn aes256_encrypt(rkeys: &FixsliceKeys256, blocks: &BatchBlocks) -> B
         rk_off += 8;
     }
 
-    #[cfg(not(aes_compact))]
     {
         shift_rows_2(&mut state);
     }
@@ -658,7 +652,6 @@ define_mix_columns!(
     rotate_rows_and_columns_2_2
 );
 
-#[cfg(not(aes_compact))]
 define_mix_columns!(
     mix_columns_2,
     inv_mix_columns_2,
@@ -666,7 +659,6 @@ define_mix_columns!(
     rotate_rows_2
 );
 
-#[cfg(not(aes_compact))]
 define_mix_columns!(
     mix_columns_3,
     inv_mix_columns_3,
@@ -685,17 +677,6 @@ fn delta_swap_2(a: &mut u32, b: &mut u32, shift: u32, mask: u32) {
     let t = (*a ^ ((*b) >> shift)) & mask;
     *a ^= t;
     *b ^= t << shift;
-}
-
-/// Applies ShiftRows once on an AES state (or key).
-#[cfg(any(not(aes_compact), feature = "hazmat"))]
-#[inline]
-fn shift_rows_1(state: &mut [u32]) {
-    debug_assert_eq!(state.len(), 8);
-    for x in state.iter_mut() {
-        delta_swap_1(x, 4, 0x0c0f0300);
-        delta_swap_1(x, 2, 0x33003300);
-    }
 }
 
 /// Applies ShiftRows twice on an AES state (or key).
@@ -874,7 +855,6 @@ fn rotate_rows_and_columns_1_1(x: u32) -> u32 {
     (ror(x, ror_distance(0, 1)) & 0xc0c0c0c0)
 }
 
-#[cfg(not(aes_compact))]
 #[inline(always)]
 #[rustfmt::skip]
 fn rotate_rows_and_columns_1_2(x: u32) -> u32 {
@@ -882,7 +862,6 @@ fn rotate_rows_and_columns_1_2(x: u32) -> u32 {
     (ror(x, ror_distance(0, 2)) & 0xf0f0f0f0)
 }
 
-#[cfg(not(aes_compact))]
 #[inline(always)]
 #[rustfmt::skip]
 fn rotate_rows_and_columns_1_3(x: u32) -> u32 {
