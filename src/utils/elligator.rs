@@ -48,3 +48,20 @@ pub fn map(rep: [u8; 32]) -> EdwardsPoint {
     let  point: Option<EdwardsPoint> = Randomized::from_representative(&rep).into();
     return point.expect("Bad Representative");
 }
+
+#[cfg(test)]
+mod tests {
+
+    use super::*;
+    #[test]
+    fn test_map(){
+        let rng = rand::thread_rng();
+        let key = key_from_rng(rng);
+        let rep = inverse_map(key.0,key.1);
+        let point = map(rep);
+        let point_byte1 = *point.compress().as_bytes();
+        let point_byte2= *EdwardsPoint::mul_base_clamped(key.0).compress().as_bytes();
+        assert_eq!(point_byte1,point_byte2);
+
+    }
+}
