@@ -60,7 +60,7 @@ mod tests {
         let rep = inverse_map(key.0,key.1);
         let point = map(rep);
         let point_byte1 = *point.compress().as_bytes();
-        let point_byte2= *EdwardsPoint::mul_base_clamped(key.0).compress().as_bytes();
+        let point_byte2= *EdwardsPoint::mul_base_clamped_dirty(key.0).compress().as_bytes();
         assert_eq!(point_byte1,point_byte2);
 
     }

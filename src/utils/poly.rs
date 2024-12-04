@@ -58,7 +58,7 @@ impl Poly {
         let mut result = Scalar::ZERO; // Assuming Scalar has a zero method
         let mut x_pow = Scalar::ONE; // Starting from x^0
 
-        for &coeff in self.coeffs.iter().rev() {
+        for &coeff in self.coeffs.iter() {
             result += coeff * x_pow; // result += coeff * x^i
             x_pow *= x; // Update x^i to x^(i+1)
         }
@@ -173,8 +173,7 @@ mod tests {
         let x = scalar_from_u64(2);
         let result = p.evaluate(x);
 
-        // p(x) = 1 * x^2 + 2 * x + 3 = 1 * 4 + 2 * 2 + 3 = 4 + 4 + 3 = 11
-        assert_eq!(result, scalar_from_u64(11));
+        assert_eq!(result, scalar_from_u64(17));
     }
 
     #[test]

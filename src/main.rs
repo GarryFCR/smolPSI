@@ -28,7 +28,7 @@ fn main() {
     let k = p1.send_round2(poly);
 
     let listt = p2.recv_round2(k, m);
-    println!("{:?}",listt);
+    println!("{:?}",listt)
 
 
 }

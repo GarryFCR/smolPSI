@@ -900,9 +900,8 @@ pub fn permute(byte_list: [u8; 32]) -> [u8; 32] {
     let blocks = input_rep(byte_list);
     let decrypted_blocks = aes256_decrypt(&ROUNDKEY, &blocks);
     let m = decrypted_blocks.as_flattened();
-    let rep : [u8; 32] = m.try_into().expect("Slice has wrong length");
+    let rep: [u8; 32] = m.try_into().expect("Slice has wrong length");
     rep
-
 }
 
 #[cfg(test)]
@@ -911,8 +910,7 @@ mod tests {
     use super::*;
     #[test]
     fn test_first_round_key() {
-        let blocks = input_rep([0_u8;32]);
-        // Call the encryption function (currently unimplemented)
+        let blocks = input_rep([0_u8; 32]);
         let encrypted_blocks = aes256_encrypt(&ROUNDKEY, &blocks);
         let decrypted_blocks = aes256_decrypt(&ROUNDKEY, &encrypted_blocks);
         // Compare the generated first round key with the expected one
@@ -921,5 +919,17 @@ mod tests {
             "First round key mismatch: expected, got {:?}",
             decrypted_blocks
         );
+    }
+
+    #[test]
+    fn test_permute() {
+        let blocks = [
+            8, 92, 171, 248, 211, 32, 99, 66, 143, 219, 210, 186, 31, 199, 94, 242, 244, 64, 217,
+            138, 209, 138, 165, 115, 87, 17, 196, 2, 170, 117, 224, 249,
+        ];
+        let inverse = inverse_permute(blocks);
+        let permute_ = permute(inverse);
+
+        assert_eq!(blocks, permute_,);
     }
 }
