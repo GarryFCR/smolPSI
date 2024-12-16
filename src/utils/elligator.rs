@@ -27,7 +27,7 @@ pub fn key_from_rng<R: RngCore + CryptoRng>(mut csprng: R) -> ([u8; 32], u8) {
     let tweak = csprng.next_u32() as u8;
 
     let mut repres: Option<[u8; 32]> = Randomized::to_representative(&private, tweak).into();
-    let retry_limit: usize = 64;
+    let retry_limit: usize = 100;
     for _ in 0..retry_limit {
         if repres.is_some() {
             return (private, tweak);
@@ -41,11 +41,12 @@ pub fn key_from_rng<R: RngCore + CryptoRng>(mut csprng: R) -> ([u8; 32], u8) {
 
 pub fn inverse_map(privkeyshare: [u8; 32], tweak: u8) -> [u8; 32] {
     let rep: Option<[u8; 32]> = Randomized::to_representative(&privkeyshare, tweak).into();
+    // RFC9380::to_representative(&privkeyshare, tweak).into();
     return rep.expect("Bad keyshare");
 }
 
 pub fn map(rep: [u8; 32]) -> EdwardsPoint {
-    let  point: Option<EdwardsPoint> = Randomized::from_representative(&rep).into();
+    let point: Option<EdwardsPoint> = Randomized::from_representative(&rep).into();
     return point.expect("Bad Representative");
 }
 
@@ -54,14 +55,14 @@ mod tests {
 
     use super::*;
     #[test]
-    fn test_map(){
+    fn test_map() {
         let rng = rand::thread_rng();
         let key = key_from_rng(rng);
-        let rep = inverse_map(key.0,key.1);
+        let rep = inverse_map(key.0, key.1);
+        println!("{}",key.1);
         let point = map(rep);
         let point_byte1 = *point.compress().as_bytes();
-        let point_byte2= *EdwardsPoint::mul_base_clamped_dirty(key.0).compress().as_bytes();
-        assert_eq!(point_byte1,point_byte2);
-
+        let point_byte2 = *Randomized::mul_base_clamped(key.0).compress().as_bytes();
+        assert_eq!(point_byte1, point_byte2);
     }
 }

@@ -25,10 +25,9 @@ fn main() {
     let m=p1.send_round1();
     let poly = p2.recv_round1();
 
-    let k = p1.send_round2(poly);
+    let k: Vec<[u8; 32]> = p1.send_round2(poly);
 
-    let listt = p2.recv_round2(k, m);
-    println!("{:?}",listt)
-
+    let list = p2.recv_round2(k, m);
+    println!("The Set Intersection as computed by {:?}: {:?}",p2.party_type,list)
 
 }

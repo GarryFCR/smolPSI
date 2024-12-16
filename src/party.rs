@@ -1,6 +1,8 @@
 use crate::utils::{aes::*, elligator::*, helper::*, poly::*};
+use curve25519_elligator2::Scalar;
 use rand::seq::SliceRandom;
 
+#[derive(Debug)]
 pub enum Partytype {
     Sender,
     Receiver,
@@ -29,13 +31,14 @@ impl Party {
         msg
     }
 
-    pub(crate) fn recv_round1(&mut self) -> Vec<[u8; 32]> {
+    pub(crate) fn recv_round1(&mut self) -> (Vec<[u8; 32]>, Vec<[u8; 32]>) {
         //for i ∈ [n]:
         //  b_i ← KA.R
         //  m′_i =KA.msg2(b_i)
         //  f_i = Π^(−1) (m′i_)
         let mut privkeyshare_list: Vec<([u8; 32], u8)> = vec![];
         let mut f_i: Vec<[u8; 32]> = vec![];
+        let mut extra: Vec<Scalar> = vec![];
 
         let n = self.set.len();
         for i in 0..n {
@@ -45,28 +48,34 @@ impl Party {
                 privkeyshare_list[i].0.clone(),
                 privkeyshare_list[i].1.clone(),
             );
-           // println!("{i} {:?}",msg.clone());
+            let mut inv = inverse_permute(msg);
 
-            f_i.push(inverse_permute(msg));
-
+            extra.push(Scalar::from(inv[31]));
+            inv[31] = 0;
+            f_i.push(inv);
         }
         let b_i: Vec<[u8; 32]> = privkeyshare_list.into_iter().map(|(arr, _)| arr).collect();
         self.privkeyshare = b_i;
         // P=interpol  ( {(H_1 (y_i),f_i)| y_i ∈Y})
         let x = string_to_scalar(self.set.clone());
         let y = to_scalar(f_i);
-        let poly = recover_pri_poly(x, y).unwrap();
-        to_byte_array(poly.coeffs)
+        let poly1 = recover_pri_poly(x, y.clone()).unwrap();
+        let poly2 = recover_pri_poly(y, extra).unwrap();
+
+        (to_byte_array(poly1.coeffs), to_byte_array(poly2.coeffs))
     }
 
-    pub(crate) fn send_round2(&mut self, coeff: Vec<[u8; 32]>) -> Vec<[u8; 32]> {
+    pub(crate) fn send_round2(&mut self, coeff: (Vec<[u8; 32]>, Vec<[u8; 32]>)) -> Vec<[u8; 32]> {
         // (abort if deg(P ) < 1)
-        if coeff.len() == 0 {
+        if coeff.0.len() == 0 & coeff.1.len() {
             panic!("Polynomial of degree less than 1");
         }
 
-        let poly = Poly {
-            coeffs: to_scalar(coeff),
+        let poly1 = Poly {
+            coeffs: to_scalar(coeff.0),
+        };
+        let poly2 = Poly {
+            coeffs: to_scalar(coeff.1),
         };
         // 5. for i ∈ [n]:
         //      k_i = KA.key1(a,Π(P(H_1(x_i))))
@@ -78,11 +87,13 @@ impl Party {
         let mut k: Vec<[u8; 32]> = vec![[0; 32]; n];
         for i in 0..n {
             //P(H_1(x_i))
-            let f_x = poly.evaluate(x[i]);
-            //Π(P(H_1(x_i)))
-            let permute = permute(f_x.to_bytes());
-           // println!("{i} {:?}",permute.clone());
+            let f_x = poly1.evaluate(x[i]);
 
+            //Π(P(H_1(x_i)))
+            let mut f_i = f_x.to_bytes();
+            let f_xx = poly2.evaluate(f_x);
+            f_i[31] = f_xx.to_bytes()[0];
+            let permute = permute(f_i);
 
             //k_i = KA.key1(a,Π(P(H_1(x_i))))
             let edw_point = map(permute);
@@ -91,12 +102,16 @@ impl Party {
             }
             let a = self.privkeyshare[0];
             let k_i = edw_point.mul_clamped(a);
+           // println!("{i} {:?}", k_i.compress().to_bytes().clone());
+
             //  k_i′ = H_2 ( x_i , k_i )
             k[i] = hash(vec![
                 self.set[i].clone().as_bytes(),
                 &k_i.compress().to_bytes(),
             ]);
         }
+        //println!("\n\n\n");
+
         // 6. K = {k1′ ,...,kn′ } (shuffled)
         let mut rng = rand::thread_rng();
         k.shuffle(&mut rng);
@@ -113,6 +128,8 @@ impl Party {
             //KA.key_2(b_i,m)
             let edw_point = map(m);
             let point = edw_point.mul_clamped(self.privkeyshare[i]);
+            //println!("{i} {:?}", point.compress().to_bytes().clone());
+
             h[i] = hash(vec![
                 self.set[i].clone().as_bytes(),
                 &point.compress().to_bytes(),
