@@ -49,7 +49,9 @@ impl Party {
                 privkeyshare_list[i].1.clone(),
             );
             let mut inv = inverse_permute(msg);
-
+            //this is done so that the most significant byte is not lost while performing 
+            //operations due to reduction
+            //todo: Find a better way to deal with this.
             extra.push(Scalar::from(inv[31]));
             inv[31] = 0;
             f_i.push(inv);
