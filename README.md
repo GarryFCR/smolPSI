@@ -15,3 +15,4 @@ The main code illustrates a simple example of the protocol. It takes two rounds 
 ### To do:
 1. Fix Elligator bug
 2. Use FFT for polynomial interpolation
+3. Do a clean sweep for vulnerabilities

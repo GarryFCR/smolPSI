@@ -103,16 +103,21 @@ impl Party {
                 panic!("Incorrect length");
             }
             let a = self.privkeyshare[0];
-            let k_i = edw_point.mul_clamped(a);
-           // println!("{i} {:?}", k_i.compress().to_bytes().clone());
-
+            let  k_i = edw_point.mul_clamped(a);
             //  k_i′ = H_2 ( x_i , k_i )
+
+            //Todo: Fix this, the elligator makes the point generated from the representative 
+            //differ from the point calculated via the protocol  in the MSB of the Most
+            //significant byte, so we are just setting the msb as 0
+
+            let mut k_i_bytes = k_i.compress().to_bytes();
+            k_i_bytes[31] &= 0x7F;
+
             k[i] = hash(vec![
                 self.set[i].clone().as_bytes(),
-                &k_i.compress().to_bytes(),
+                &k_i_bytes,
             ]);
         }
-        //println!("\n\n\n");
 
         // 6. K = {k1′ ,...,kn′ } (shuffled)
         let mut rng = rand::thread_rng();
@@ -122,7 +127,7 @@ impl Party {
 
     pub(crate) fn recv_round2(&mut self, k: Vec<[u8; 32]>, m: [u8; 32]) -> Vec<String> {
         let mut intersected_set = Vec::new();
-        // output { y_i  | H_2 (y_i ,KA.key_2(b_i,m)) ∈ K }
+        //output { y_i  | H_2 (y_i ,KA.key_2(b_i,m)) ∈ K }
         let n = self.set.len();
         let mut h: Vec<[u8; 32]> = vec![[0; 32]; n];
 
@@ -132,9 +137,12 @@ impl Party {
             let point = edw_point.mul_clamped(self.privkeyshare[i]);
             //println!("{i} {:?}", point.compress().to_bytes().clone());
 
+            let mut point_bytes = point.compress().to_bytes();
+            point_bytes[31] &= 0x7F;
+
             h[i] = hash(vec![
                 self.set[i].clone().as_bytes(),
-                &point.compress().to_bytes(),
+                &point_bytes,
             ]);
         }
         for i in 0..n {

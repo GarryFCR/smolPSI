@@ -24,7 +24,7 @@ pub fn key_from_rng<R: RngCore + CryptoRng>(mut csprng: R) -> ([u8; 32], u8) {
 
     // The tweak only needs generated once as it doesn't affect the overall
     // validity of the elligator2 representative.
-    let tweak = csprng.next_u32() as u8;
+    let tweak = 0;
 
     let mut repres: Option<[u8; 32]> = Randomized::to_representative(&private, tweak).into();
     let retry_limit: usize = 100;
@@ -59,10 +59,11 @@ mod tests {
         let rng = rand::thread_rng();
         let key = key_from_rng(rng);
         let rep = inverse_map(key.0, key.1);
-        println!("{}",key.1);
         let point = map(rep);
-        let point_byte1 = *point.compress().as_bytes();
-        let point_byte2 = *Randomized::mul_base_clamped(key.0).compress().as_bytes();
+        let  point_byte1 = *point.compress().as_bytes();
+        let  point_byte2 = *Randomized::mul_base_clamped(key.0).compress().as_bytes();
+        //point_byte1[31] &= 0x7F;
+        //point_byte2[31] &= 0x7F;
         assert_eq!(point_byte1, point_byte2);
     }
 }
